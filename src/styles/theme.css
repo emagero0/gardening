@@ -13,3 +13,9 @@
   --color-bg: #1a1a1a;
   --color-text: #f5f5f5;
 }
+
+@layer base {
+  body {
+    @apply bg-light dark:bg-dark;
+  }
+}
