@@ -1,23 +1,47 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
+import { ConnectionStatus } from './ConnectionStatus';
+import { SwUpdateNotification } from './SwUpdateNotification';
+import { useOfflineStatus } from '../hooks/useOfflineStatus';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: '📊' },
   { path: '/history', label: 'History', icon: '📈' },
+  { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const isOffline = useOfflineStatus();
 
   return (
     <div className="min-h-screen bg-light dark:bg-dark">
+      {/* Connection Status */}
+      <ConnectionStatus />
+
+      {/* Service Worker Update Notification */}
+      <SwUpdateNotification />
+
       {/* Top Navigation for Desktop */}
       <nav className="hidden md:flex items-center justify-between bg-white dark:bg-gray-800 shadow-lg px-6 py-4">
         <div className="flex items-center space-x-8">
-          <h1 className="text-xl font-inter font-bold text-primary">
-            Vertical Garden
-          </h1>
+          <Link to="/" className="flex items-center space-x-2">
+            <h1 className="text-xl font-inter font-bold text-primary">
+              Vertical Garden
+            </h1>
+            {isOffline && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 
+                         text-gray-700 dark:text-gray-300 rounded-full"
+              >
+                Offline
+              </motion.span>
+            )}
+          </Link>
           <div className="flex space-x-4">
             {NAV_ITEMS.map(({ path, label }) => (
               <Link
@@ -40,8 +64,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </nav>
 
       {/* Main Content */}
-      <main className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)]">
-        {children}
+      <main className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] px-4 py-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Bottom Navigation for Mobile */}
@@ -68,6 +102,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
         </div>
       </nav>
+
+      {/* Offline Indicator for Mobile */}
+      {isOffline && (
+        <div className="md:hidden fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-1 text-sm">
+          Working Offline
+        </div>
+      )}
     </div>
   );
 };
