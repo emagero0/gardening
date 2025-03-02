@@ -4,11 +4,17 @@ import { generateSampleData } from '../utils/generateSampleData';
 
 export type TimeRange = '24h' | '7d' | '30d';
 
-interface SensorDataPoint {
-  timestamp: number;
-  moisture: number;
+export interface Event {
+  timestamp: string;
+  type: 'watering' | 'fertilization' | 'maintenance';
+  description: string;
+}
+
+export interface SensorDataPoint {
+  timestamp: string;
   temperature: number;
   humidity: number;
+  moisture: number;
   npk: {
     nitrogen: number;
     phosphorus: number;
@@ -18,16 +24,12 @@ interface SensorDataPoint {
 
 export const useSensorHistory = (timeRange: TimeRange) => {
   const [data, setData] = useState<SensorDataPoint[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const { getData } = useIndexedDB({
-    name: 'verticalGardenDB',
-    version: 1,
-    storeName: 'sensorData'
-  });
-
   useEffect(() => {
+    console.log('Fetching data for timeRange:', timeRange);
     const fetchHistory = async () => {
       try {
         setLoading(true);
@@ -40,71 +42,80 @@ export const useSensorHistory = (timeRange: TimeRange) => {
           '30d': 30
         };
 
-        // Always use sample data in development
-        if (import.meta.env.DEV) {
-          console.log('Using sample data for development');
-          const sampleData = generateSampleData(rangeDays[timeRange]);
-          setData(sampleData);
-          setLoading(false);
-          return;
-        }
+        // Generate sample data
+        const sampleData = generateSampleData(rangeDays[timeRange]);
+        console.log('Generated sample data:', sampleData.length, 'points');
 
-        // In production, use IndexedDB data
-        try {
-          const allData = await getData();
-          if (!Array.isArray(allData)) {
-            throw new Error('Invalid data format received from storage');
+        // Generate sample events
+        const sampleEvents: Event[] = [];
+        const eventChance = timeRange === '24h' ? 0.1 : timeRange === '7d' ? 0.05 : 0.02;
+
+        sampleData.forEach(point => {
+          if (Math.random() < eventChance) {
+            const eventTypes: Array<Event['type']> = ['watering', 'fertilization', 'maintenance'];
+            const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+            const descriptions = {
+              watering: 'Automatic watering cycle',
+              fertilization: 'NPK supplement added',
+              maintenance: 'System maintenance check'
+            };
+
+            sampleEvents.push({
+              timestamp: point.timestamp,
+              type,
+              description: descriptions[type]
+            });
           }
+        });
 
-          const now = Date.now();
-          const rangeMs = rangeDays[timeRange] * 24 * 60 * 60 * 1000;
-          
-          const filteredData = allData
-            .filter(point => (now - point.timestamp) <= rangeMs)
-            .sort((a, b) => a.timestamp - b.timestamp);
+        // Format timestamps
+        const formattedData = sampleData.map(point => ({
+          ...point,
+          timestamp: formatTimestamp(point.timestamp, timeRange)
+        }));
 
-          setData(filteredData);
-        } catch (storageErr) {
-          console.error('Storage error:', storageErr);
-          // Fallback to sample data if storage fails
-          const sampleData = generateSampleData(rangeDays[timeRange]);
-          setData(sampleData);
-        }
+        setData(formattedData);
+        setEvents(sampleEvents.map(event => ({
+          ...event,
+          timestamp: formatTimestamp(event.timestamp, timeRange)
+        })));
+        setLoading(false);
       } catch (err) {
-        console.error('Error fetching sensor history:', err);
+        console.error('Error in useSensorHistory:', err);
         setError(err as Error);
-      } finally {
         setLoading(false);
       }
     };
 
     fetchHistory();
-  }, [timeRange, getData]);
+  }, [timeRange]);
 
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    if (timeRange === '24h') {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTimestamp = (timestamp: string, range: TimeRange): string => {
+    try {
+      const date = new Date(timestamp);
+      if (range === '24h') {
+        return date.toLocaleTimeString([], { 
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+      return date.toLocaleDateString([], { 
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    } catch (err) {
+      console.error('Error formatting timestamp:', timestamp, err);
+      return timestamp;
     }
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
-
-  const calculateNPKAverage = (point: SensorDataPoint): number => {
-    const { nitrogen, phosphorus, potassium } = point.npk;
-    return (nitrogen + phosphorus + potassium) / 3;
-  };
-
-  // Data transformation for charts
-  const chartData = data.map(point => ({
-    timestamp: formatTimestamp(point.timestamp),
-    moisture: Number(point.moisture.toFixed(1)),
-    temperature: Number(point.temperature.toFixed(1)),
-    humidity: Number(point.humidity.toFixed(1)),
-    npk: Number(calculateNPKAverage(point).toFixed(1))
-  }));
 
   return {
-    data: chartData,
+    data,
+    events,
     loading,
     error,
     isEmpty: data.length === 0
