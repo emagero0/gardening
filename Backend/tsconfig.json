@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2016", // Or a newer target like ES2020, ESNext
+    "module": "CommonJS", // Standard for Node.js
+    "outDir": "./dist", // Output directory for compiled JavaScript
+    "rootDir": "./src", // Source directory for TypeScript files
+    "strict": true, // Enable all strict type-checking options
+    "esModuleInterop": true, // Enables compatibility with CommonJS modules
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references
+    "resolveJsonModule": true, // Allow importing JSON files
+    "moduleResolution": "node", // Specify module resolution strategy
+    "sourceMap": true, // Generate source maps for debugging
+    "baseUrl": ".", // Base directory for non-relative module imports
+    "paths": {
+      "@/*": ["src/*"] // Optional: Alias for src directory
+    }
+  },
+  "include": ["src/**/*"], // Files to include in compilation
+  "exclude": ["node_modules", "**/*.spec.ts"] // Files/directories to exclude
+}
