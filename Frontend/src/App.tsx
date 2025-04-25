@@ -1,29 +1,29 @@
+// Frontend/src/App.tsx - CORRECTED
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { GardenProvider } from './contexts/GardenContext';
+// Removed GardenProvider import from here
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
-import { useWebSocket } from './hooks/useWebSocket'; // Import the hook
-// Removed SwUpdateNotification import
+import { KitchenAdvicePopup } from './components/KitchenAdvicePopup'; // Import the popup
+import { useWebSocket } from './hooks/useWebSocket';
 
 const App: React.FC = () => {
-  // Call the hook to establish the WebSocket connection
-  // We don't necessarily need the returned values here, but calling the hook runs its effects.
+  // This call is now safe because GardenProvider wraps App in main.tsx
   useWebSocket();
 
   return (
-    <GardenProvider>
-      <Layout>
-        {/* Removed SwUpdateNotification component */}
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Layout>
-    </GardenProvider>
+    // GardenProvider removed from here
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+      <KitchenAdvicePopup /> {/* Add the popup component here */}
+    </Layout>
+    // GardenProvider removed from here
   );
 };
 

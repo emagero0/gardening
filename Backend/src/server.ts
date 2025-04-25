@@ -1,9 +1,10 @@
-import express, { Request, Response, RequestHandler } from 'express'; // Import RequestHandler
+import express, { Request, Response, RequestHandler } from 'express';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
-import { serverConfig } from './config'; // Import server config
-import pool from './db'; // Import the database pool
+import cors from 'cors';
+import { serverConfig } from './config';
+import pool from './db';
 
 const app = express();
 const server = http.createServer(app);
@@ -11,7 +12,8 @@ const wss = new WebSocketServer({ server });
 
 const PORT = serverConfig.port; // Use port from config
 
-// Middleware to parse JSON bodies
+// Middleware
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 
 // --- WebSocket Connection Handling ---

@@ -2,7 +2,9 @@ import { useEffect, useRef, useCallback, useState } from 'react'; // Added useSt
 import { useGarden } from '../contexts/GardenContext';
 // Removed useLocalStorage and useOfflineStatus
 
-export const useWebSocket = (url: string = 'ws://localhost:3001') => { // Use correct URL
+import { config } from '../config';
+
+export const useWebSocket = () => { // Use URL from config
   const { state, dispatch } = useGarden();
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false); // Local state for connection status
@@ -13,9 +15,9 @@ export const useWebSocket = (url: string = 'ws://localhost:3001') => { // Use co
       return;
     }
 
-    console.log(`Attempting to connect WebSocket to ${url}...`);
+    console.log(`Attempting to connect WebSocket to ${config.wsUrl}...`);
     try {
-      const ws = new WebSocket(url);
+      const ws = new WebSocket(config.wsUrl);
 
       ws.onopen = () => {
         console.log('WebSocket Connected');
@@ -72,7 +74,7 @@ export const useWebSocket = (url: string = 'ws://localhost:3001') => { // Use co
     } catch (error) {
       console.error('Error creating WebSocket:', error);
     }
-  }, [url, dispatch]); // Added url to dependencies
+  }, [dispatch]); // Removed url from dependencies since we use config.wsUrl
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {

@@ -1,16 +1,16 @@
+// Frontend/src/main.tsx - CORRECTED
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { GardenProvider } from './GardenContext'; // update this path if necessary
-import './styles/theme.css';
+import { GardenProvider } from './contexts/GardenContext'; // Correct path
+import './styles/theme.css'; // Keep your theme import
 
-// Check for saved theme preference or default to system preference
-const darkModeEnabled = 
-  localStorage.theme === 'dark' || 
+// Theme logic remains the same
+const darkModeEnabled =
+  localStorage.theme === 'dark' ||
   (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-// Apply dark mode class if needed
 if (darkModeEnabled) {
   document.documentElement.classList.add('dark');
 } else {
@@ -20,7 +20,10 @@ if (darkModeEnabled) {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      {/* Wrap App with the GardenProvider here */}
+      <GardenProvider>
+        <App />
+      </GardenProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

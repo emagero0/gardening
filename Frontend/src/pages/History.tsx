@@ -15,7 +15,9 @@ import {
 import { Spinner } from '../components/Spinner';
 import { NPKBreakdownChart } from '../components/NPKBreakdownChart';
 // import { ChartAnnotation } from '../components/ChartAnnotation'; // Remove event-related imports for now
+// Correctly import export functions - ensure no local redeclaration conflicts
 import { exportToCSV, exportToJSON } from '../utils/exportData';
+import { config } from '../config';
 
 const CHART_COLORS = {
   temperature: '#F56565',
@@ -183,8 +185,13 @@ export const History: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Add timeRange parameter to API call when backend supports it
-        const response = await fetch('/api/sensor-history');
+        // Add timeRange parameter to API call.
+        // NOTE: This assumes the backend API at /api/sensor-history
+        // can accept a query parameter like ?range=24h, ?range=7d, or ?range=30d.
+        // If the backend doesn't support this, it will likely ignore the parameter.
+        const apiUrl = `${config.endpoints.sensorHistory}?range=${timeRange}`;
+        console.log(`Fetching history data from: ${apiUrl}`);
+        const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -200,8 +207,8 @@ export const History: React.FC = () => {
     };
 
     fetchData();
-    // TODO: Add timeRange to dependency array when backend filtering is implemented
-  }, []); // Fetch only on mount for now
+    // Add timeRange to dependency array so data refetches when the range changes.
+  }, [timeRange]); // Refetch when timeRange changes
 
   // Removed zoom handlers and resetZoom
 
@@ -210,24 +217,44 @@ export const History: React.FC = () => {
     // Transform data for export if necessary. Let's assume export functions
     // can handle the current structure (with moistureA/B and nested npk).
     // If export errors persist, we'll need to check/modify exportData.ts
-    // or create a more specific transformation here.
+    // Transform data for export
     const dataToExport = historyData.map(item => ({
-      timestamp: item.timestamp, // Use the formatted timestamp string
-      temperature: item.temperature ?? null, // Use null for missing values
+      timestamp: item.timestamp,
+      temperature: item.temperature ?? null,
       humidity: item.humidity ?? null,
       moistureA: item.moistureA ?? null,
       moistureB: item.moistureB ?? null,
-      nitrogen: item.npk.nitrogen, // Flatten NPK for easier export
+      nitrogen: item.npk.nitrogen,
       phosphorus: item.npk.phosphorus,
       potassium: item.npk.potassium,
     }));
 
-    if (format === 'csv') {
-      exportToCSV(dataToExport);
-    } else {
-      exportToJSON(dataToExport);
+    if (dataToExport.length === 0) {
+      console.warn("No data available to export.");
+      alert("No data available to export for the selected period.");
+      return;
     }
-  }, [historyData]); // Depend on historyData
+
+    // Generate filename based on time range and date
+    const filenameBase = `garden_history_${timeRange}_${new Date().toISOString().split('T')[0]}`;
+
+    // Call the correct export function with data and filename
+    // Call the export functions with only the data argument.
+    // Filename generation might be handled within the utils or defaults to a standard name.
+    try {
+      if (format === 'csv') {
+        exportToCSV(dataToExport); // Pass only data
+      } else {
+        exportToJSON(dataToExport); // Pass only data
+      }
+      console.log(`Exported data as ${format}`);
+      // Optionally inform user about default filename if known
+      // alert(`Data exported as ${format}. Check your downloads for the file.`);
+    } catch (exportError) {
+        console.error(`Failed to export data as ${format}:`, exportError);
+        alert(`Failed to export data as ${format}. See console for details.`);
+    }
+  }, [historyData, timeRange]); // Correct dependencies
 
   // --- Chart Rendering Logic ---
   const chartProps = useMemo(() => ({
